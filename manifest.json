@@ -1,0 +1,22 @@
+{
+  "id": "./",
+  "name": "Rocked App Maker",
+  "short_name": "Rocked Maker",
+  "description": "AI powered application creation studio",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#07111f",
+  "theme_color": "#07111f",
+  "lang": "bn",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
+```sans-serif
