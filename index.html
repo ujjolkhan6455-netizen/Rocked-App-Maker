@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080e1b">
+<title>ROCKED APP MASTER STUDIO</title>
+<style>
+:root{--bg:#080e1b;--panel:#111e32;--card:#17263d;--line:#2c405e;--blue:#347cff;--text:#edf3ff;--muted:#9db0ce;--green:#16a477}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,sans-serif}
+header{height:62px;background:#101b2e;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 15px;position:sticky;top:0;z-index:5}
+.brand{font-size:16px;font-weight:bold;color:#76adff}
+.page{display:none;max-width:1100px;margin:auto;padding:15px}
+.page.active{display:block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:15px;margin-bottom:13px}
+h2{font-size:18px;margin:0 0 13px}
+h3{font-size:14px;color:#a9caff;margin:0 0 10px}
+p,.hint{font-size:12px;color:var(--muted);line-height:1.6}
+label{display:block;font-size:13px;color:#b8c9e3;margin:12px 0 7px}
+input,textarea,select{width:100%;padding:12px;background:#081321;color:white;border:1px solid #344966;border-radius:8px;outline:none;font:14px Arial}
+textarea{min-height:100px;resize:vertical;line-height:1.5}
+input:focus,textarea:focus,select:focus{border-color:#5797ff}
+button{border:0;border-radius:8px;padding:11px 14px;background:var(--blue);color:white;font-weight:bold;cursor:pointer}
+button.secondary{background:#263751;color:#e2ebff}
+button.green{background:var(--green)}
+button.red{background:#a53b4b}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row button{flex:1}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.grid button{width:100%}
+.project{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:9px;margin-top:9px}
+.project-info{min-width:0;flex:1}
+.project-name{font-weight:bold;overflow-wrap:anywhere}
+.project-actions{display:flex;gap:5px;flex-wrap:wrap}
+.project-actions button{padding:8px;font-size:11px}
+.editor{font-family:monospace;min-height:220px;font-size:13px;tab-size:2}
+.tabs{display:flex;gap:6px;overflow:auto;margin-bottom:10px}
+.tabs button{white-space:nowrap}
+.hidden{display:none!important}
+.status{padding:11px;border-radius:8px;background:#0d3028;color:#82e8bb;font-size:13px;line-height:1.6;overflow-wrap:anywhere}
+.warning{background:#392a18;color:#ffdc9b}
+.error{background:#421e29;color:#ffb3bd}
+iframe{width:100%;height:420px;background:white;border:1px solid var(--line);border-radius:9px}
+.section-number{color:#65a5ff;font-weight:bold;margin-right:5px}
+.list{display:flex;flex-direction:column;gap:8px}
+.small-button{padding:8px 11px;font-size:12px}
+.language-count{color:#75b5ff;font-weight:bold;font-size:12px}
+#downloadFallback{position:fixed;bottom:15px;left:10px;right:10px;z-index:99999;background:#17263d;border:1px solid #347cff;border-radius:12px;padding:14px;text-align:center;box-shadow:0 4px 20px #0008}
+#downloadFallback a{display:block;background:#16a477;color:white;text-decoration:none;padding:13px;border-radius:8px;font-weight:bold}
+@media(max-width:520px){
+ .page{padding:9px}
+ .card{padding:12px}
+ .project{align-items:flex-start;flex-direction:column}
+ .project-actions{width:100%}
+ iframe{height:350px}
+}
+</style>
+</head>
+<body>
+
+<header>
+ <div class="brand">ROCKED APP MASTER STUDIO</div>
+ <span id="headerProject" class="hint">PROJECT DASHBOARD</span>
+</header>
+
+<main id="dashboard" class="page active">
+ <div class="card">
+  <h2>Project Dashboard</h2>
+  <p>নতুন অ্যাপ তৈরি করো অথবা আগের কোনো প্রজেক্ট নির্বাচন করে কাজ চালিয়ে যাও।</p>
+  <label>New Application Name</label>
+  <input id="newProjectName" placeholder="তোমার অ্যাপের নাম লেখো">
+  <button style="width:100%;margin-top:12px" onclick="createProject()">＋ CREATE NEW APP</button>
+ </div>
+
+ <div class="card">
+  <h2>Previous Projects</h2>
+  <input id="projectSearch" placeholder="Search projects..." oninput="renderProjects()">
+  <div id="projectList" class="list"></div>
+  <p id="emptyProjects" class="hint">এখনো কোনো প্রজেক্ট তৈরি করা হয়নি।</p>
+ </div>
+
+ <div class="card">
+  <h2>Project Management</h2>
+  <div class="grid">
+   <button class="secondary" onclick="exportBackup()">Export Backup</button>
+   <button class="secondary" onclick="$('backupInput').click()">Restore Backup</button>
+   <button class="secondary" onclick="showHistory()">Project History</button>
+   <button class="secondary" onclick="clearSearch()">Clear Search</button>
+  </div>
+  <input id="backupInput" type="file" accept=".json,application/json" class="hidden">
+  <div id="dashboardMessage" class="hint"></div>
+ </div>
+</main>
+
+<main id="studio" class="page">
+ <div class="row" style="margin-bottom:12px">
+  <button class="secondary" onclick="goDashboard()">← Dashboard</button>
+  <button onclick="saveProject()">💾 SAVE PROJECT</button>
+ </div>
+
+ <div class="card">
+  <h2 id="currentProjectName">Application Studio</h2>
+  <div class="grid">
+   <button onclick="createApp()">CREATE</button>
+   <button class="secondary" onclick="upgradeApp()">UPGRADE</button>
+   <button class="secondary" onclick="testApp()">TEST</button>
+   <button class="green" onclick="publishApp()">PUBLISH</button>
+  </div>
+  <p>CREATE: প্রজেক্টের কোড প্রস্তুত ও Preview আপডেট। UPGRADE: পরিবর্তন সংরক্ষণ। TEST: কোড পরীক্ষা। PUBLISH: Export ও Download।</p>
+ </div>
+
+ <div class="card">
+  <h2><span class="section-number">01</span>Custom Code Engine</h2>
+  <div class="tabs">
+   <button id="tabHTML" onclick="switchEditor('html')">HTML</button>
+   <button id="tabCSS" class="secondary" onclick="switchEditor('css')">CSS</button>
+   <button id="tabJS" class="secondary" onclick="switchEditor('js')">JavaScript</button>
+  </div>
+  <textarea id="codeHTML" class="editor" spellcheck="false"></textarea>
+  <textarea id="codeCSS" class="editor hidden" spellcheck="false"></textarea>
+  <textarea id="codeJS" class="editor hidden" spellcheck="false"></textarea>
+
+  <div class="card" style="margin-top:14px;background:#0c192b">
+   <h3>Additional Programming Languages</h3>
+   <div class="language-count">100 Additional Languages Available</div>
+   <label>Select Programming Language</label>
+   <select id="extraLanguage" onchange="switchExtraLanguage()"></select>
+   <label id="extraLanguageLabel">Python Code</label>
+   <textarea id="extraCode" class="editor" spellcheck="false" placeholder="Write your code here..."></textarea>
+   <div class="row" style="margin-top:10px">
+    <button onclick="saveExtraCode()">Save Language Code</button>
+    <button class="secondary" onclick="clearExtraCode()">Clear Editor</button>
+   </div>
+   <p>প্রতিটি ভাষার কোড আলাদাভাবে সংরক্ষিত হবে এবং Project Export ও Backup-এর সঙ্গেও থাকবে।</p>
+  </div>
+
+  <div class="row" style="margin-top:10px">
+   <button onclick="applyCode()">Apply Code</button>
+   <button class="secondary" onclick="resetCode()">Reset Code</button>
+  </div>
+ </div>
+
+ <div class="card">
+  <h2><span class="section-number">02</span>Arguments Engine</h2>
+  <label>Build Arguments</label>
+  <textarea id="argumentsBox" placeholder="প্রয়োজনীয় build arguments লিখো। প্রতি লাইনে একটি argument।"></textarea>
+  <p>উদাহরণ: --release, --minify। এগুলো সংরক্ষিত থাকবে; প্রকৃত build system না থাকলে কার্যকর হবে না।</p>
+ </div>
+
+ <div class="card">
+  <h2><span class="section-number">03</span>Dependency Manager</h2>
+  <label>Dependency Name / Package</label>
+  <input id="dependencyName" placeholder="যেমন: library-name">
+  <label>Version</label>
+  <input id="dependencyVersion" placeholder="যেমন: 1.0.0">
+  <button style="margin-top:10px" onclick="addDependency()">＋ Add Dependency</button>
+  <div id="dependencyList" class="list"></div>
+ </div>
+
+ <div class="card">
+  <h2><span class="section-number">04</span>Permission Configuration</h2>
+  <p>প্রজেক্টের জন্য প্রয়োজনীয় Android permission চিহ্নিত করো। এগুলো তালিকায় সংরক্ষিত হবে; APK-তে কার্যকর করতে Android Manifest ও build configuration দরকার।</p>
+  <div id="permissionList" class="list"></div>
+ </div>
+
+ <div class="card">
+  <h2><span class="section-number">05</span>AI Page Designer</h2>
+  <label>Design Instructions</label>
+  <textarea id="designPrompt" placeholder="অ্যাপের UI কেমন হবে, রং, বাটন, পেজ ও লেআউট বর্ণনা করো।"></textarea>
+  <button style="width:100%;margin-top:10px" onclick="applyDesign()">Apply Design Instructions</button>
+  <p>এই সংস্করণে নির্দেশনা সংরক্ষিত হয়। বাস্তব AI দিয়ে ডিজাইন তৈরি করতে AI API-সংযুক্ত নিরাপদ Backend দরকার।</p>
+ </div>
+
+ <div class="card">
+  <h2><span class="section-number">06</span>API Key / Secret Key Configuration</h2>
+  <label>AI Provider</label>
+  <select id="apiProvider">
+   <option value="openai">OpenAI</option>
+   <option value="google">Google AI</option>
+   <option value="custom">Custom API</option>
+  </select>
+  <label>API Endpoint</label>
+  <input id="apiEndpoint" placeholder="https://your-backend.example/api">
+  <label>API Key</label>
+  <input id="apiKey" type="password" autocomplete="off" placeholder="API key (not saved)">
+  <label>Secret Key</label>
+  <input id="secretKey" type="password" autocomplete="off" placeholder="Secret key (not saved)">
+  <p class="hint">নিরাপত্তার জন্য API Key ও Secret Key এই ফাইলে বা Local Storage-এ সংরক্ষণ করা হয় না। সরাসরি প্রকাশিত HTML-এ গোপন Key রাখা নিরাপদ নয়। Backend-এর মাধ্যমে API ব্যবহার করতে হবে।</p>
+ </div>
+
+ <div class="card">
+  <h2><span class="section-number">07</span>AI Development Chat</h2>
+  <div id="chatMessages" class="list">
+   <div class="status">Rocked Studio: অ্যাপের নতুন ফিচার বা পরিবর্তনের নির্দেশনা এখানে লিখতে পারো।</div>
+  </div>
+  <label>Your Instruction</label>
+  <textarea id="chatPrompt" placeholder="অ্যাপে কী পরিবর্তন বা নতুন ফিচার চাও?"></textarea>
+  <button style="width:100%;margin-top:10px" onclick="sendInstruction()">Send Instruction</button>
+  <p>এখানে নির্দেশনা স্থানীয়ভাবে নোট হিসেবে রাখা হয়। বাস্তব AI উত্তর ও কোড পরিবর্তনের জন্য Backend সংযোগ এখনো করতে হবে।</p>
+ </div>
+
+ <div class="card">
+  <h2><span class="section-number">08</span>Error Checker</h2>
+  <button style="width:100%" onclick="checkErrors()">🔍 CHECK PROJECT</button>
+  <br><br>
+  <div id="errorResult" class="status">পরীক্ষা শুরু করতে Check Project চাপো।</div>
+ </div>
+
+ <div class="card">
+  <h2><span class="section-number">09</span>Test Engine & Live Preview</h2>
+  <button style="width:100%;margin-bottom:10px" onclick="refreshPreview()">↻ Refresh Preview</button>
+  <iframe id="previewFrame" sandbox="allow-scripts allow-forms allow-modals"></iframe>
+ </div>
+
+ <div class="card">
+  <h2><span class="section-number">10</span>Publishing Engine</h2>
+  <div class="grid">
+   <button class="green" onclick="downloadHTML()">Download HTML App</button>
+   <button class="secondary" onclick="exportProject()">Export Project JSON</button>
+   <button class="secondary" onclick="copyFullCode()">Copy Full HTML</button>
+   <button class="secondary" onclick="exportBackup()">Backup Project</button>
+  </div>
+  <br>
+  <div class="status warning">
+   HTML Download কার্যকর। APK, Play Store publishing, signing, online update ও direct phone installation-এর জন্য আলাদা Android build server এবং publishing ব্যবস্থা তৈরি করতে হবে।
+  </div>
+ </div>
+
+ <div class="card">
+  <h2>Project History</h2>
+  <div id="historyList" class="list"></div>
+ </div>
+</main>
+
+<script>
+"use strict";
+
+const $=id=>document.getElementById(id);
+const STORAGE="rocked_master_studio_v1";
+
+const starter={
+ html:`<main class="app">
+ <h1>Welcome to Your App</h1>
+ <p>Your application starts here.</p>
+ <button onclick="showMessage()">Click Me</button>
+ <p id="message"></p>
+</main>`,
+ css:`body{font-family:Arial,sans-serif;background:#edf2ff;padding:20px;text-align:center}
+.app{max-width:500px;margin:30px auto;padding:28px;background:white;border-radius:18px;box-shadow:0 5px 25px #0001}
+button{background:#286cf0;color:white;padding:12px 20px;border:0;border-radius:8px}`,
+ js:`function showMessage(){
+ document.getElementById('message').textContent='Your app is working!';
+}`
+};
+
+const extraLanguages=[
+"Python","Java","C","C++","C#","Go","Rust","Kotlin","Swift","Dart",
+"Ruby","PHP","TypeScript","SQL","Bash","Shell","PowerShell","Perl","Lua","R",
+"Julia","MATLAB","Scala","Groovy","Haskell","Elixir","Erlang","Clojure","F#","OCaml",
+"VB.NET","Visual Basic","Objective-C","Assembly","Fortran","COBOL","Pascal","Delphi","Ada","Prolog",
+"Lisp","Scheme","Solidity","Vyper","Move","Cairo","Zig","Nim","Crystal","D",
+"Pony","Gleam","Elm","PureScript","Reason","ReScript","CoffeeScript","ActionScript","Apex","ABAP",
+"PL/SQL","T-SQL","PL/pgSQL","XQuery","XPath","SAS","Stata","Wolfram Language","Smalltalk","Eiffel",
+"Racket","Janet","Tcl","AWK","QML","GLSL","HLSL","WGSL","CUDA","OpenCL",
+"Verilog","VHDL","GDScript","Arduino","Processing","JSON","XML","YAML","TOML","Markdown",
+"GraphQL","Dockerfile","Makefile","CMake","Terraform HCL","Nix","LaTeX","Protobuf","Thrift","WebAssembly"
+];
+
+let projects=[];
+let currentId=null;
+let activeEditor="html";
+let currentExtraLanguage="Python";
+
+const permissions=[
+ ["INTERNET","Internet access"],
+ ["CAMERA","Camera"],
+ ["RECORD_AUDIO","Microphone"],
+ ["ACCESS_FINE_LOCATION","Precise location"],
+ ["ACCESS_COARSE_LOCATION","Approximate location"],
+ ["READ_CONTACTS","Contacts"],
+ ["POST_NOTIFICATIONS","Notifications"],
+ ["VIBRATE","Vibration"],
+ ["READ_MEDIA_IMAGES","Read images"],
+ ["READ_MEDIA_VIDEO","Read videos"]
+];
+
+function initializeExtraLanguages(){
+ const select=$("extraLanguage");
+ select.innerHTML="";
+ extraLanguages.forEach(language=>{
+  const option=document.createElement("option");
+  option.value=language;
+  option.textContent=language;
+  select.append(option);
+ });
+ select.value="Python";
+ $("extraLanguageLabel").textContent="Python Code";
+}
+
+function newId(){
+ return "p_"+Date.now()+"_"+Math.random().toString(36).slice(2,7);
+}
+
+function newProject(name){
+ return {
+  id:newId(),name:name,description:"",version:"1.0.0",
+  html:starter.html,css:starter.css,js:starter.js,
+  extraCode:{},args:"",dependencies:[],permissions:[],
+  design:"",chat:[],history:[],created:Date.now(),updated:Date.now()
+ };
+}
+
+function persist(){
+ try{
+  localStorage.setItem(STORAGE,JSON.stringify(projects));
+  return true;
+ }catch(e){
+  alert("Storage error: "+e.message);
+  return false;
+ }
+}
+
+function loadProjects(){
+ try{
+  const data=JSON.parse(localStorage.getItem(STORAGE)||"[]");
+  projects=Array.isArray(data)?data:[];
+ }catch(e){projects=[]}
+ renderProjects();
+}
+
+function current(){
+ return projects.find(p=>p.id===currentId)||null;
+}
+
+function createProject(){
+ const name=$("newProjectName").value.trim();
+ if(!name){alert("প্রথমে অ্যাপের নাম লেখো।");return}
+ const p=newProject(name);
+ projects.unshift(p);
+ currentId=p.id;
+ persist();
+ $("newProjectName").value="";
+ openProject(p.id);
+ renderProjects();
+}
+
+function renderProjects(){
+ const list=$("projectList");
+ const q=$("projectSearch").value.toLowerCase().trim();
+ list.innerHTML="";
+ const filtered=projects.filter(p=>p.name.toLowerCase().includes(q));
+ $("emptyProjects").classList.toggle("hidden",filtered.length>0);
+ filtered.forEach(p=>{
+  const item=document.createElement("div");
+  item.className="project";
+  const info=document.createElement("div");
+  info.className="project-info";
+  const name=document.createElement("div");
+  name.className="project-name";
+  name.textContent=p.name;
+  const date=document.createElement("div");
+  date.className="hint";
+  date.textContent="Updated: "+new Date(p.updated).toLocaleString();
+  info.append(name,date);
+  const actions=document.createElement("div");
+  actions.className="project-actions";
+  actions.append(
+   actionButton("OPEN","",()=>openProject(p.id)),
+   actionButton("RENAME","secondary",()=>renameProject(p.id)),
+   actionButton("DUPLICATE","secondary",()=>duplicateProject(p.id)),
+   actionButton("DELETE","red",()=>deleteProject(p.id))
+  );
+  item.append(info,actions);
+  list.append(item);
+ });
+}
+
+function actionButton(text,cls,fn){
+ const b=document.createElement("button");
+ b.textContent=text;
+ if(cls)b.className=cls;
+ b.onclick=fn;
+ return b;
+}
+
+function openProject(id){
+ const p=projects.find(x=>x.id===id);
+ if(!p)return;
+ currentId=id;
+ p.extraCode=p.extraCode||{};
+ $("dashboard").classList.remove("active");
+ $("studio").classList.add("active");
+ $("headerProject").textContent=p.name;
+ $("currentProjectName").textContent=p.name;
+ $("codeHTML").value=p.html;
+ $("codeCSS").value=p.css;
+ $("codeJS").value=p.js;
+ $("argumentsBox").value=p.args||"";
+ $("designPrompt").value=p.design||"";
+ currentExtraLanguage="Python";
+ $("extraLanguage").value="Python";
+ $("extraLanguageLabel").textContent="Python Code";
+ $("extraCode").value=p.extraCode.Python||"";
+ renderDependencies();
+ renderPermissions();
+ renderChat();
+ renderHistory();
+ switchEditor("html");
+ refreshPreview();
+}
+
+function goDashboard(){
+ saveSilently();
+ $("studio").classList.remove("active");
+ $("dashboard").classList.add("active");
+ $("headerProject").textContent="PROJECT DASHBOARD";
+ renderProjects();
+}
+
+function renameProject(id){
+ const p=projects.find(x=>x.id===id);
+ if(!p)return;
+ const name=prompt("নতুন প্রজেক্টের নাম:",p.name);
+ if(name&&name.trim()){
+  p.name=name.trim();
+  p.updated=Date.now();
+  persist();
+  renderProjects();
+  if(currentId===id){
+   $("currentProjectName").textContent=p.name;
+   $("headerProject").textContent=p.name;
+  }
+ }
+}
+
+function duplicateProject(id){
+ const p=projects.find(x=>x.id===id);
+ if(!p)return;
+ const copy=JSON.parse(JSON.stringify(p));
+ copy.id=newId();
+ copy.name=p.name+" Copy";
+ copy.created=Date.now();
+ copy.updated=Date.now();
+ copy.history=[];
+ projects.unshift(copy);
+ persist();
+ renderProjects();
+}
+
+function deleteProject(id){
+ const p=projects.find(x=>x.id===id);
+ if(!p||!confirm('"'+p.name+'" প্রজেক্টটি মুছে ফেলবে?'))return;
+ projects=projects.filter(x=>x.id!==id);
+ if(currentId===id){
+  currentId=null;
+  $("studio").classList.remove("active");
+  $("dashboard").classList.add("active");
+  $("headerProject").textContent="PROJECT DASHBOARD";
+ }
+ persist();
+ renderProjects();
+}
+
+function switchEditor(type){
+ activeEditor=type;
+ ["html","css","js"].forEach(t=>{
+  $("code"+t.toUpperCase()).classList.toggle("hidden",t!==type);
+  $("tab"+t.toUpperCase()).classList.toggle("secondary",t!==type);
+ });
+}
+
+function switchExtraLanguage(){
+ const p=current();
+ if(!p)return;
+ p.extraCode=p.extraCode||{};
+ p.extraCode[currentExtraLanguage]=$("extraCode").value;
+ currentExtraLanguage=$("extraLanguage").value;
+ $("extraLanguageLabel").textContent=currentExtraLanguage+" Code";
+ $("extraCode").value=p.extraCode[currentExtraLanguage]||"";
+}
+
+function saveExtraCode(){
+ const p=current();
+ if(!p)return;
+ p.extraCode=p.extraCode||{};
+ p.extraCode[currentExtraLanguage]=$("extraCode").value;
+ p.updated=Date.now();
+ persist();
+ alert(currentExtraLanguage+" code saved successfully.");
+}
+
+function clearExtraCode(){
+ if(!confirm("এই ভাষার কোড মুছে ফেলবে?"))return;
+ $("extraCode").value="";
+ const p=current();
+ if(!p)return;
+ p.extraCode=p.extraCode||{};
+ p.extraCode[currentExtraLanguage]="";
+ p.updated=Date.now();
+ persist();
+}
+
+function saveSilently(){
+ const p=current();
+ if(!p)return;
+ p.name=$("currentProjectName").textContent;
+ p.html=$("codeHTML").value;
+ p.css=$("codeCSS").value;
+ p.js=$("codeJS").value;
+ p.args=$("argumentsBox").value;
+ p.design=$("designPrompt").value;
+ p.extraCode=p.extraCode||{};
+ p.extraCode[currentExtraLanguage]=$("extraCode").value;
+ p.updated=Date.now();
+ persist();
+}
+
+function saveProject(){
+ const p=current();
+ if(!p)return;
+ saveSilently();
+ p.history.unshift({time:Date.now(),version:p.version,note:"Manual save"});
+ p.history=p.history.slice(0,30);
+ persist();
+ renderHistory();
+ alert("Project saved successfully.");
+}
+
+function applyCode(){
+ saveSilently();
+ refreshPreview();
+ alert("Code applied to project.");
+}
+
+function resetCode(){
+ if(!confirm("তিনটি মূল কোড এডিটর Starter Code-এ ফিরিয়ে নেবে?"))return;
+ $("codeHTML").value=starter.html;
+ $("codeCSS").value=starter.css;
+ $("codeJS").value=starter.js;
+ saveSilently();
+ refreshPreview();
+}
+
+function addDependency(){
+ const name=$("dependencyName").value.trim();
+ const version=$("dependencyVersion").value.trim();
+ if(!name){alert("Dependency name লিখো।");return}
+ const p=current();
+ if(!p)return;
+ p.dependencies=p.dependencies||[];
+ p.dependencies.push({name,version:version||"latest"});
+ $("dependencyName").value="";
+ $("dependencyVersion").value="";
+ persist();
+ renderDependencies();
+}
+
+function renderDependencies(){
+ const p=current();
+ const box=$("dependencyList");
+ box.innerHTML="";
+ (p?.dependencies||[]).forEach((d,i)=>{
+  const item=document.createElement("div");
+  item.className="project";
+  const info=document.createElement("span");
+  info.textContent=d.name+" @ "+d.version;
+  const remove=actionButton("REMOVE","red",()=>{
+   p.dependencies.splice(i,1);
+   persist();
+   renderDependencies();
+  });
+  item.append(info,remove);
+  box.append(item);
+ });
+}
+
+function renderPermissions(){
+ const p=current();
+ const box=$("permissionList");
+ box.innerHTML="";
+ permissions.forEach(([code,title])=>{
+  const label=document.createElement("label");
+  label.style.display="flex";
+  label.style.gap="9px";
+  label.style.alignItems="center";
+  const input=document.createElement("input");
+  input.type="checkbox";
+  input.style.width="auto";
+  input.checked=(p?.permissions||[]).includes(code);
+  input.onchange=()=>{
+   const project=current();
+   if(!project)return;
+   project.permissions=project.permissions||[];
+   if(input.checked){
+    if(!project.permissions.includes(code))project.permissions.push(code);
+   }else{
+    project.permissions=project.permissions.filter(x=>x!==code);
+   }
+   persist();
+  };
+  const text=document.createElement("span");
+  text.textContent=title+" ("+code+")";
+  label.append(input,text);
+  box.append(label);
+ });
+}
+
+function renderChat(){
+ const p=current();
+ const box=$("chatMessages");
+ box.innerHTML="";
+ (p?.chat||[]).forEach(m=>{
+  const div=document.createElement("div");
+  div.className="status";
+  div.style.background=m.role==="user"?"#1b3150":"#0d3028";
+  div.textContent=(m.role==="user"?"You: ":"Studio note: ")+m.text;
+  box.append(div);
+ });
+}
+
+function sendInstruction(){
+ const text=$("chatPrompt").value.trim();
+ const p=current();
+ if(!text||!p)return;
+ p.chat=p.chat||[];
+ p.chat.push({role:"user",text,time:Date.now()});
+ p.design=text;
+ p.updated=Date.now();
+ p.chat.push({
+  role:"assistant",
+  text:"নির্দেশনাটি প্রজেক্টে সংরক্ষিত হয়েছে। বাস্তব AI কোড পরিবর্তনের জন্য Backend ও AI API সংযোগ প্রয়োজন।"
+ });
+ $("chatPrompt").value="";
+ persist();
+ renderChat();
+}
+
+function applyDesign(){
+ const p=current();
+ if(!p)return;
+ p.design=$("designPrompt").value;
+ p.updated=Date.now();
+ persist();
+ alert("Design instructions saved. AI rendering is not connected yet.");
+}
+
+function escapeHTML(value){
+ return String(value).replace(/[&<>"']/g,c=>({
+  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+ })[c]);
+}
+
+function buildDocument(){
+ const p=current();
+ if(!p)throw new Error("No active project");
+ const css=p.css.replace(/<\/style/gi,"<\\/style");
+ const js=p.js.replace(/<\/script/gi,"<\\/script");
+ return `<!doctype html>
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${escapeHTML(p.name)}</title>
+<style>${css}</style>
+</head><body>
+${p.html}
+<script>${js}<\/script>
+</body></html>`;
+}
+
+function refreshPreview(){
+ try{
+  $("previewFrame").srcdoc=buildDocument();
+ }catch(e){
+  $("errorResult").className="status error";
+  $("errorResult").textContent=e.message;
+ }
+}
+
+function checkErrors(){
+ const p=current();
+ if(!p)return;
+ const errors=[];
+ if(!p.html.trim())errors.push("HTML code is empty.");
+ try{new Function(p.js)}
+ catch(e){errors.push("JavaScript syntax error: "+e.message)}
+ const result=$("errorResult");
+ if(errors.length){
+  result.className="status error";
+  result.textContent=errors.join(" | ");
+ }else{
+  result.className="status";
+  result.textContent="Basic JavaScript syntax check passed. Full runtime, dependency and Android build validation are not included.";
+ }
+}
+
+function createApp(){
+ saveSilently();
+ refreshPreview();
+ alert("CREATE complete: project code assembled and preview refreshed.");
+}
+
+function upgradeApp(){
+ const p=current();
+ if(!p)return;
+ saveSilently();
+ p.version=nextVersion(p.version);
+ p.history=p.history||[];
+ p.history.unshift({time:Date.now(),version:p.version,note:"Upgrade saved"});
+ p.history=p.history.slice(0,30);
+ persist();
+ renderHistory();
+ alert("Project upgraded to version "+p.version+".");
+}
+
+function nextVersion(v){
+ const parts=String(v||"1.0.0").split(".").map(Number);
+ while(parts.length<3)parts.push(0);
+ parts[2]=(parts[2]||0)+1;
+ return parts.join(".");
+}
+
+function testApp(){
+ saveSilently();
+ checkErrors();
+ refreshPreview();
+ $("errorResult").scrollIntoView({behavior:"smooth",block:"center"});
+}
+
+function publishApp(){
+ saveSilently();
+ downloadHTML();
+}
+
+/* IMPROVED DOWNLOAD ENGINE */
+function downloadHTML(){
+ try{
+  saveSilently();
+  const p=current();
+  if(!p)throw new Error("No active project");
+
+  const html=buildDocument();
+  const blob=new Blob([html],{type:"text/html;charset=utf-8"});
+  const filename=(p.name.replace(/[^a-z0-9_-]/gi,"_")||"app")+".html";
+
+  downloadBlob(blob,filename);
+ }catch(e){
+  alert("Download error: "+e.message);
+ }
+}
+
+function exportProject(){
+ const p=current();
+ if(!p)return;
+ saveSilently();
+ const blob=new Blob([JSON.stringify(p,null,2)],{type:"application/json"});
+ downloadBlob(blob,(p.name.replace(/[^a-z0-9_-]/gi,"_")||"project")+".json");
+}
+
+function exportBackup(){
+ const blob=new Blob([JSON.stringify(projects,null,2)],{type:"application/json"});
+ downloadBlob(blob,"rocked-studio-backup.json");
+}
+
+/*
+  Android / Acode compatible download:
+  1. Tries normal browser download.
+  2. Displays a manual download link if automatic download is blocked.
+  3. Opens the generated file as a fallback if the WebView blocks downloads.
+*/
+function downloadBlob(blob,name){
+ let url=null;
+
+ try{
+  if(!(blob instanceof Blob))throw new Error("Invalid file");
+
+  url=URL.createObjectURL(blob);
+
+  const old=$("downloadFallback");
+  if(old)old.remove();
+
+  const box=document.createElement("div");
+  box.id="downloadFallback";
+
+  const message=document.createElement("div");
+  message.textContent="ফাইল ডাউনলোড করতে নিচের বাটনে চাপ দাও।";
+  message.style.cssText="color:white;font-size:13px;margin-bottom:10px";
+
+  const link=document.createElement("a");
+  link.href=url;
+  link.download=name;
+  link.textContent="⬇ DOWNLOAD FILE";
+
+  const openLink=document.createElement("a");
+  openLink.href=url;
+  openLink.target="_blank";
+  openLink.rel="noopener";
+  openLink.download="";
+  openLink.textContent="OPEN / SAVE FILE";
+  openLink.style.cssText="display:block;margin-top:9px;color:#a9caff;text-decoration:none;padding:9px";
+
+  const close=document.createElement("button");
+  close.textContent="CLOSE";
+  close.className="secondary";
+  close.style.marginTop="5px";
+  close.onclick=()=>box.remove();
+
+  box.append(message,link,openLink,close);
+  document.body.appendChild(box);
+
+  const a=document.createElement("a");
+  a.href=url;
+  a.download=name;
+  a.style.display="none";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  // URL revoke is delayed to allow mobile browsers to finish downloading.
+  setTimeout(()=>{
+   try{URL.revokeObjectURL(url)}catch(e){}
+  },10*60*1000);
+
+ }catch(e){
+  if(url){
+   try{URL.revokeObjectURL(url)}catch(err){}
+  }
+  alert("Download failed: "+e.message);
+ }
+}
+
+async function copyFullCode(){
+ try{
+  await navigator.clipboard.writeText(buildDocument());
+  alert("Full HTML copied.");
+ }catch(e){
+  alert("Clipboard unavailable. Use Download HTML.");
+ }
+}
+
+$("backupInput").addEventListener("change",async e=>{
+ const file=e.target.files[0];
+ if(!file)return;
+ try{
+  const data=JSON.parse(await file.text());
+  if(!Array.isArray(data))throw new Error("Invalid backup format");
+  const valid=data.filter(p=>p&&typeof p.name==="string"&&typeof p.html==="string"&&typeof p.css==="string"&&typeof p.js==="string");
+  if(!valid.length)throw new Error("No valid projects found");
+  valid.forEach(p=>{
+   if(!p.id||projects.some(x=>x.id===p.id))p.id=newId();
+   p.extraCode=p.extraCode||{};
+  });
+  projects=[...valid,...projects];
+  persist();
+  renderProjects();
+  alert(valid.length+" project(s) restored.");
+ }catch(err){
+  alert("Restore failed: "+err.message);
+ }
+ e.target.value="";
+});
+
+function renderHistory(){
+ const p=current();
+ const box=$("historyList");
+ box.innerHTML="";
+ (p?.history||[]).forEach(h=>{
+  const div=document.createElement("div");
+  div.className="status";
+  div.textContent="v"+h.version+" — "+h.note+" — "+new Date(h.time).toLocaleString();
+  box.append(div);
+ });
+ if(!box.children.length)box.textContent="No history yet.";
+}
+
+function showHistory(){
+ const p=current();
+ $("dashboardMessage").textContent=p
+  ?"বর্তমান প্রজেক্ট: "+p.name+" | সংস্করণ: "+p.version+" | পরিবর্তনের ইতিহাস Studio পেজে রয়েছে।"
+  :"প্রজেক্ট খুললে তার বিস্তারিত ইতিহাস দেখা যাবে।";
+}
+
+function clearSearch(){
+ $("projectSearch").value="";
+ renderProjects();
+}
+
+initializeExtraLanguages();
+loadProjects();
+</script>
+</body>
+  </html>
